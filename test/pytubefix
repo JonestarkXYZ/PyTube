@@ -1,0 +1,75 @@
+from pytubefix import YouTube
+import os
+from urllib.parse import urlparse, parse_qs
+import subprocess
+
+url = "https://www.youtube.com/watch?v=wLmh1HAfyQg&list=RDwLmh1HAfyQg&start_radio=1"
+modo_descarga = "audio"  # Opciones: "audio" o "video"
+formato_salida = "mp3"  # Cambia a "m4a", "wav", etc.
+
+# Limpiar la URL (quitar parámetros innecesarios)
+def limpiar_url_youtube(url):
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    video_id = query.get("v", [None])[0]
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+    else:
+        raise ValueError("No se pudo extraer el ID del video.")
+
+# Aplicar limpieza
+url = limpiar_url_youtube(url)
+print(f"[INFO] URL limpia: {url}")
+
+# Obtener el modo de descarga
+print(f"[INFO] Modo de descarga: {modo_descarga}")
+
+# Obtener el directorio actual del script
+directorio_destino = os.path.abspath(os.path.dirname(__file__))
+print(f"[INFO] Carpeta destino: {directorio_destino}")
+
+try:
+    yt = YouTube(url)
+    print(f"[INFO] Título del video: {yt.title}")
+    print(f"[INFO] Canal: {yt.author}")
+
+    if modo_descarga == "audio":
+        print("[INFO] Buscando la mejor calidad de audio...")
+        stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
+    elif modo_descarga == "video":
+        print("[INFO] Buscando la mejor calidad de video progresivo...")
+        stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+    else:
+        print("[ERROR] Modo de descarga no válido. Usa 'audio' o 'video'.")
+        exit(1)
+
+    if not stream:
+        print("[ERROR] No se encontró un stream adecuado.")
+        exit(1)
+
+    print(f"[INFO] Stream seleccionado: {stream.mime_type}, {stream.abr or stream.resolution}")
+    print("[INFO] Iniciando descarga...")
+    archivo = stream.download(output_path=directorio_destino)
+    print(f"[ÉXITO] Archivo descargado: {archivo}")
+
+    # Obtener ruta sin extensión
+    base, _ = os.path.splitext(archivo)
+    archivo_salida = f"{base}.{formato_salida}"
+
+    if formato_salida != "webm" and formato_salida != archivo.split(".")[-1]:
+        print(f"[INFO] Convirtiendo a {formato_salida}...")
+        comando = [
+            "ffmpeg", "-y", "-i", archivo,
+            archivo_salida
+        ]
+        subprocess.run(comando, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        print(f"[ÉXITO] Archivo convertido: {archivo_salida}")
+        
+        # Opcional: eliminar original
+        os.remove(archivo)
+
+except Exception as e:
+    print(f"[ERROR] Ocurrió un error: {e}")
+
+

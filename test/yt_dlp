@@ -1,0 +1,79 @@
+import os
+import subprocess
+import yt_dlp
+from urllib.parse import urlparse, parse_qs
+
+# ==================== CONFIGURACIÓN ====================
+
+url_original = "https://www.youtube.com/watch?v=wLmh1HAfyQg&list=RDwLmh1HAfyQg&start_radio=1"
+
+modo_descarga = "video"         # "audio" o "video"
+formato_salida = "mp4"          # mp3, wav, mp4, etc.
+descargar_lista = False         # True: playlist completa, False: solo video individual
+
+# =======================================================
+
+# Obtener el directorio actual del script
+directorio_base = os.path.abspath(os.path.dirname(__file__))
+print(f"[INFO] Carpeta base del proyecto: {directorio_base}")
+
+# Función para limpiar URL individual
+def limpiar_url_youtube(url):
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    video_id = query.get("v", [None])[0]
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+    else:
+        raise ValueError("No se pudo extraer el ID del video.")
+
+# Construir opciones para yt-dlp
+if descargar_lista:
+    url = url_original  # Playlist completa
+    print("[INFO] Modo: Descarga de lista completa")
+
+    # Crear carpeta para la playlist (dentro de /src o donde se ejecute el script)
+    nombre_carpeta = "playlist_descargada"
+    ruta_carpeta = os.path.join(directorio_base, nombre_carpeta)
+    os.makedirs(ruta_carpeta, exist_ok=True)
+    print(f"[INFO] Carpeta creada para la lista: {ruta_carpeta}")
+else:
+    url = limpiar_url_youtube(url_original)
+    print("[INFO] Modo: Solo video individual")
+    print(f"[INFO] URL limpia: {url}")
+    ruta_carpeta = directorio_base  # Guardar en carpeta actual
+
+# Opciones comunes de salida
+output_template = os.path.join(ruta_carpeta, "%(title)s.%(ext)s")
+
+# Configurar opciones para yt-dlp
+if modo_descarga == "audio":
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': output_template,
+        'quiet': False,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': formato_salida,
+            'preferredquality': '192',
+        }],
+    }
+elif modo_descarga == "video":
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+        'outtmpl': output_template,
+        'quiet': False,
+        'merge_output_format': formato_salida,
+    }
+else:
+    print("[ERROR] Modo de descarga inválido. Usa 'audio' o 'video'.")
+    exit(1)
+
+# Descargar usando yt-dlp
+try:
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print(f"[INFO] Iniciando descarga desde: {url}")
+        ydl.download([url])
+        print("✅ Descarga(s) completada(s).")
+except Exception as e:
+    print(f"[ERROR] Ocurrió un error durante la descarga: {e}")

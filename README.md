@@ -24,6 +24,8 @@ Aplicación de escritorio en Python para descargar videos y audios de YouTube us
 - En Linux, una aplicación predeterminada configurada para abrir archivos multimedia.
 - En Windows, `ffmpeg` debe estar disponible en el `PATH`.
 
+### Linux
+
 En Debian, Ubuntu o derivados:
 
 ```bash
@@ -31,14 +33,35 @@ sudo apt update
 sudo apt install python3 python3-venv ffmpeg
 ```
 
+### Windows
+
+En Windows instala:
+
+- Python 3.11 o superior desde <https://www.python.org/downloads/windows/>.
+- `ffmpeg` agregado al `PATH`.
+
+Con `winget`, puedes instalar `ffmpeg` así:
+
+```powershell
+winget install Gyan.FFmpeg
+```
+
+Después verifica que Windows lo detecta:
+
+```powershell
+ffmpeg -version
+```
+
 ## Instalación
 
 Clona el repositorio:
 
 ```bash
-git clone https://github.com/TU_USUARIO/PyTube.git
+git clone https://github.com/JonestarkXYZ/PyTube.git
 cd PyTube
 ```
+
+### Instalación en Linux
 
 Crea el entorno virtual:
 
@@ -50,13 +73,6 @@ Activa el entorno virtual:
 
 ```bash
 source myenv/bin/activate
-```
-
-En Windows:
-
-```powershell
-python -m venv myenv
-.\myenv\Scripts\Activate.ps1
 ```
 
 Instala las dependencias:
@@ -72,7 +88,36 @@ chmod +x install_deps.sh
 ./install_deps.sh
 ```
 
+### Instalación en Windows
+
+Crea el entorno virtual:
+
+```powershell
+python -m venv myenv
+```
+
+Activa el entorno virtual:
+
+```powershell
+.\myenv\Scripts\Activate.ps1
+```
+
+Si PowerShell bloquea la activación del entorno virtual, habilita scripts solo para el usuario actual:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Instala las dependencias:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
 ## Uso
+
+### Ejecutar en Linux
 
 Ejecuta la aplicación:
 
@@ -80,7 +125,9 @@ Ejecuta la aplicación:
 ./myenv/bin/python src/main.py
 ```
 
-En Windows:
+### Ejecutar en Windows
+
+Ejecuta la aplicación:
 
 ```powershell
 .\myenv\Scripts\python.exe src\main.py
@@ -103,9 +150,16 @@ La aplicación guarda la carpeta de descarga en:
 config.json
 ```
 
-Ese archivo no debe subirse al repositorio porque contiene una ruta local de la PC del usuario. Por eso está incluido en `.gitignore`.
+Ese archivo no debe subirse a un repositorio porque contiene una ruta local de la PC del usuario. Por eso está incluido en `.gitignore`.
 
 Si la carpeta guardada no existe o fue borrada, la aplicación pedirá seleccionar una nueva carpeta desde el explorador de archivos.
+
+La aplicación detecta automáticamente el sistema operativo:
+
+- En Linux usa rutas típicas como `~/Descargas` o `~/Downloads`.
+- En Windows usa la carpeta `Downloads` del usuario.
+- El archivo descargado se abre con la aplicación predeterminada del sistema.
+- `config.json` guarda la carpeta seleccionada y puede mantener rutas separadas para Linux y Windows.
 
 ## Estructura del proyecto
 
